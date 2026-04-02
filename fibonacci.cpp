@@ -1,9 +1,7 @@
 #include <iostream>
 #include <string>
 #include <cctype>
-#include <limits>
 #include <chrono>
-#include <stdexcept>
 
 /**
  * Класс для вычисления чисел Фибоначчи
@@ -14,7 +12,7 @@ public:
      * Вычисляет n-е число Фибоначчи (итеративный метод)
      * @param n порядковый номер числа Фибоначчи (0-50)
      * @return n-е число Фибоначчи
-     * @throws std::invalid_argument при некорректном входе
+     * @throws std::invalid_argument если n < 0 или n > 50
      */
     static long long calculate(int n) {
         // Проверка корректности входных данных
@@ -31,9 +29,10 @@ public:
         
         long long prev = 0;
         long long curr = 1;
+        long long next;
         
         for (int i = 2; i <= n; ++i) {
-            long long next = prev + curr;
+            next = prev + curr;
             prev = curr;
             curr = next;
         }
@@ -47,15 +46,16 @@ public:
     static bool isValidNumber(const std::string& str, int& result) {
         if (str.empty()) return false;
         
+        // Проверяем, что все символы - цифры
         for (char c : str) {
-            if (!std::isdigit(static_cast<unsigned char>(c))) {
+            if (!std::isdigit(c)) {
                 return false;
             }
         }
         
         try {
             result = std::stoi(str);
-            return result >= 0 && result <= 50;
+            return true;
         } catch (const std::exception&) {
             return false;
         }
@@ -65,9 +65,9 @@ public:
 /**
  * Основная функция программы
  */
-int main(int argc, char* argv[]) {
+int main() {
     std::cout << "========================================" << std::endl;
-    std::cout << "  Fibonacci Number Calculator v1.0" << std::endl;
+    std::cout << "  Программа вычисления чисел Фибоначчи" << std::endl;
     std::cout << "  Вариант 1: Последовательность Фибоначчи" << std::endl;
     std::cout << "========================================" << std::endl;
     std::cout << std::endl;
@@ -75,57 +75,50 @@ int main(int argc, char* argv[]) {
     std::string input;
     int n;
     
-    // Если аргумент передан через командную строку
-    if (argc == 2) {
-        input = argv[1];
+    // Цикл для корректного ввода
+    while (true) {
+        std::cout << "Введите целое неотрицательное число n (0-50): ";
+        std::getline(std::cin, input);
+        
+        // Проверка на пустой ввод
+        if (input.empty()) {
+            std::cout << "Ошибка: Ввод не может быть пустым!" << std::endl;
+            continue;
+        }
+        
+        // Проверка на корректность числа
         if (FibonacciCalculator::isValidNumber(input, n)) {
-            try {
-                auto start = std::chrono::high_resolution_clock::now();
-                long long result = FibonacciCalculator::calculate(n);
-                auto end = std::chrono::high_resolution_clock::now();
-                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-                
-                std::cout << "F(" << n << ") = " << result << std::endl;
-                std::cout << "Время вычисления: " << duration.count() << " мкс" << std::endl;
-                return 0;
-            } catch (const std::exception& e) {
-                std::cerr << "Ошибка: " << e.what() << std::endl;
-                return 1;
+            // Проверка диапазона
+            if (n >= 0 && n <= 50) {
+                break;
+            } else {
+                std::cout << "Ошибка: Число должно быть в диапазоне от 0 до 50!" << std::endl;
             }
         } else {
-            std::cerr << "Ошибка: некорректный аргумент. Используйте число от 0 до 50." << std::endl;
-            return 1;
+            std::cout << "Ошибка: Введите целое неотрицательное число!" << std::endl;
         }
     }
     
-    // Интерактивный режим
-    while (true) {
-        std::cout << "Введите целое число n (0-50) или 'q' для выхода: ";
-        std::getline(std::cin, input);
+    // Вычисление и вывод результата
+    try {
+        auto start = std::chrono::high_resolution_clock::now();
+        long long result = FibonacciCalculator::calculate(n);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         
-        if (input == "q" || input == "Q" || input == "quit") {
-            std::cout << "До свидания!" << std::endl;
-            break;
-        }
+        std::cout << std::endl;
+        std::cout << "Результат вычислений:" << std::endl;
+        std::cout << "  Fibonacci(" << n << ") = " << result << std::endl;
+        std::cout << "  Время вычисления: " << duration.count() << " микросекунд" << std::endl;
         
-        if (FibonacciCalculator::isValidNumber(input, n)) {
-            try {
-                auto start = std::chrono::high_resolution_clock::now();
-                long long result = FibonacciCalculator::calculate(n);
-                auto end = std::chrono::high_resolution_clock::now();
-                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-                
-                std::cout << "Результат: F(" << n << ") = " << result << std::endl;
-                std::cout << "Время вычисления: " << duration.count() << " мкс" << std::endl;
-                std::cout << std::endl;
-            } catch (const std::exception& e) {
-                std::cerr << "Ошибка: " << e.what() << std::endl;
-            }
-        } else {
-            std::cout << "Ошибка: введите целое число от 0 до 50!" << std::endl;
-            std::cout << std::endl;
-        }
+    } catch (const std::exception& e) {
+        std::cerr << "Ошибка: " << e.what() << std::endl;
+        return 1;
     }
+    
+    std::cout << std::endl;
+    std::cout << "Программа завершена. Нажмите Enter для выхода...";
+    std::cin.get();
     
     return 0;
 }
