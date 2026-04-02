@@ -1,70 +1,73 @@
 # Компилятор и флаги
 CXX = g++
-CXXFLAGS = -Wall -Wextra -O2 -std=c++17 -DNDEBUG
-DEBUG_FLAGS = -g -O0 -DDEBUG
+CXXFLAGS = -Wall -Wextra -O2 -std=c++17
 LDFLAGS = 
 
-# Директории
-SRC_DIR = src
-TEST_DIR = tests
-BUILD_DIR = build
-BIN_DIR = bin
+# Имя исполняемого файла
+TARGET = fibonacci
 
 # Исходные файлы
-SRCS = $(wildcard $(SRC_DIR)/*.cpp)
-OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
+SRCS = fibonacci.cpp
+OBJS = $(SRCS:.cpp=.o)
 
-# Исполняемые файлы
-TARGET = $(BIN_DIR)/fibonacci
-TEST_TARGET = $(BIN_DIR)/test_fibonacci
+# Цветной вывод (для красоты)
+GREEN = \033[0;32m
+RED = \033[0;31m
+NC = \033[0m
 
 # Цель по умолчанию
-all: directories $(TARGET)
+all: $(TARGET)
+	@echo "${GREEN}✓ Сборка завершена. Исполняемый файл: $(TARGET)${NC}"
 
-# Создание директорий
-directories:
-	mkdir -p $(BUILD_DIR) $(BIN_DIR)
-
-# Сборка основной программы
+# Сборка исполняемого файла
 $(TARGET): $(OBJS)
 	$(CXX) $(OBJS) -o $(TARGET) $(LDFLAGS)
-	@echo "✓ Сборка завершена: $(TARGET)"
-	@echo "  Запустите программу: ./$(TARGET)"
 
 # Компиляция объектных файлов
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-# Сборка тестов
-$(TEST_TARGET): $(TEST_DIR)/test_fibonacci.cpp | directories
-	$(CXX) $(CXXFLAGS) $(TEST_DIR)/test_fibonacci.cpp -o $(TEST_TARGET)
+	@echo "  Компиляция $<"
 
 # Запуск программы
 run: $(TARGET)
 	./$(TARGET)
 
-# Запуск тестов
-test: $(TEST_TARGET)
-	./$(TEST_TARGET)
-
-# Отладочная сборка
-debug: CXXFLAGS = $(DEBUG_FLAGS)
-debug: clean all
-	@echo "✓ Отладочная сборка завершена"
+# Отладка (сборка с отладочной информацией)
+debug: CXXFLAGS += -g -O0 -DDEBUG
+debug: clean $(TARGET)
 
 # Очистка
 clean:
-	rm -rf $(BUILD_DIR) $(BIN_DIR)
-	@echo "✓ Очистка завершена"
+	rm -f $(OBJS) $(TARGET)
+	@echo "${GREEN}✓ Очистка завершена${NC}"
 
-# Установка (для deb-пакета)
-install: all
-	install -d $(DESTDIR)/usr/local/bin
-	install -m 755 $(TARGET) $(DESTDIR)/usr/local/bin/fibonacci
+# Установка в систему
+install: $(TARGET)
+	@echo "Установка $(TARGET) в /usr/local/bin/"
+	sudo install -d /usr/local/bin
+	sudo install -m 755 $(TARGET) /usr/local/bin/$(TARGET)
+	@echo "${GREEN}✓ Установка завершена${NC}"
 
-# Проверка наличия компилятора
-check-deps:
-	@command -v $(CXX) >/dev/null 2>&1 || { echo "✗ Ошибка: $(CXX) не установлен"; exit 1; }
-	@echo "✓ Все зависимости установлены"
+# Удаление из системы
+uninstall:
+	@echo "Удаление $(TARGET) из /usr/local/bin/"
+	sudo rm -f /usr/local/bin/$(TARGET)
+	@echo "${GREEN}✓ Удаление завершено${NC}"
 
-.PHONY: all directories run test debug clean install check-deps
+# Проверка зависимостей
+check:
+	@command -v $(CXX) >/dev/null 2>&1 || { echo "${RED}✗ Ошибка: $(CXX) не установлен.${NC}\n  Установите: sudo apt install build-essential"; exit 1; }
+	@echo "${GREEN}✓ Все зависимости установлены${NC}"
+
+# Помощь
+help:
+	@echo "Доступные команды:"
+	@echo "  make          - Собрать программу"
+	@echo "  make run      - Собрать и запустить программу"
+	@echo "  make debug    - Собрать с отладочной информацией"
+	@echo "  make clean    - Очистить собранные файлы"
+	@echo "  make install  - Установить программу в систему"
+	@echo "  make uninstall- Удалить программу из системы"
+	@echo "  make check    - Проверить наличие компилятора"
+
+.PHONY: all run debug clean install uninstall check help
